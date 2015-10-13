@@ -20,7 +20,7 @@ module Gecko
       # attribute :action_items_email, String
 
       # attribute :notification_email, Boolean
-      # attribute :permisssions,       Array[String]
+      # attribute :permissions,        Array[String]
       # attribute :account_id,         Integer
 
       ## DEPRECATED
