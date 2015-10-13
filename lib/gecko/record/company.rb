@@ -6,6 +6,10 @@ module Gecko
       belongs_to :assignee,         class_name: "User"
       belongs_to :default_tax_type, class_name: "TaxType"
       belongs_to :default_payment_term, class_name: "PaymentTerm"
+      belongs_to :default_stock_location, class_name: "Location"
+      # belongs_to :default_price_list,   class_name: "PriceList"
+      attribute :default_price_list_id,  String
+      # belongs_to :default_ledger_account
 
       has_many :addresses
       has_many :contacts
@@ -20,14 +24,15 @@ module Gecko
       attribute :website,                String
       attribute :company_type,           String
 
-      attribute :status,                 String, readonly: true
 
       attribute :tax_number,             String
 
       attribute :default_tax_rate,       BigDecimal
-      attribute :default_discount_rate,  BigDecimal
+      attribute :status,                 String
 
-      # belongs_to :default_price_list,   class_name: "PriceList"
+      attribute :default_discount_rate,  BigDecimal
+      ## DEPRECATED
+      attribute :default_price_type_id,  String
     end
 
     class CompanyAdapter < BaseAdapter
