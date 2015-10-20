@@ -31,6 +31,8 @@ module Gecko
     record :PurchaseOrderLineItem
     record :TaxType
     record :PaymentTerm
+    record :StockAdjustment
+    record :StockAdjustmentLineItem
 
     # Return OAuth client
     #
