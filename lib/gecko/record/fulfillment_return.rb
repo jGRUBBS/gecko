@@ -4,6 +4,7 @@ module Gecko
   module Record
     class FulfillmentReturn < Base
       has_many :fulfillment_return_line_items
+      belongs_to :order
       belongs_to :location
 
       attribute :delivery_type,      String
