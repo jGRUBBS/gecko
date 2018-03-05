@@ -3,7 +3,7 @@ require 'gecko/record/base'
 module Gecko
   module Record
     class Invoice < Base
-      belongs_to :order
+      belongs_to :order, writeable_on: :create
       belongs_to :shipping_address
       belongs_to :billing_address
       belongs_to :payment_term
@@ -16,10 +16,10 @@ module Gecko
       attribute :notes,           String
       attribute :exchange_rate,   BigDecimal
 
-      attribute :destination_url, String,   readonly: true
-      attribute :document_url,    String,   readonly: true
-      attribute :created_at,      DateTime, readonly: true
-      attribute :updated_at,      DateTime, readonly: true
+      attribute :status,          String,     readonly: true
+      attribute :payment_status,  String,     readonly: true
+      attribute :total,           BigDecimal, readonly: true
+      attribute :document_url,    String,     readonly: true
     end
 
     class InvoiceAdapter < BaseAdapter

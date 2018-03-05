@@ -21,7 +21,7 @@ module Gecko
         attribute :value,            BigDecimal
       end
 
-      belongs_to :product
+      belongs_to :product, writeable_on: :create
       has_many :images
 
       attribute :name,            String
@@ -36,6 +36,7 @@ module Gecko
       attribute :opt3,            String
 
       attribute :weight,          String
+      attribute :weight_unit,     String
 
       attribute :status,          String,   readonly: true
 
@@ -54,7 +55,6 @@ module Gecko
       attribute :reorder_point,   Integer
       attribute :max_online,      Integer
 
-      attribute :composite,       Boolean
       attribute :keep_selling,    Boolean
       attribute :taxable,         Boolean
       attribute :sellable,        Boolean
@@ -63,10 +63,15 @@ module Gecko
       attribute :position,        Integer
 
       attribute :stock_on_hand,   BigDecimal, readonly: true
+      attribute :incoming_stock,  BigDecimal, readonly: true
       attribute :committed_stock, BigDecimal, readonly: true
 
       attribute :locations,       Array[VariantLocation]
       attribute :variant_prices,  Array[VariantPrice]
+
+      attribute :composite,           Boolean,    writeable_on: :create
+      attribute :initial_stock_level, BigDecimal, writeable_on: :create
+      attribute :initial_cost_price,  BigDecimal, writeable_on: :create
 
       # Returns a display name for a variant
       #

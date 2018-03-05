@@ -1,7 +1,7 @@
 module Gecko
   module Record
     class BaseAdapter
-      attr_reader :client
+      attr_reader :client, :last_response
       # Instantiates a new Record Adapter
       #
       # @param [Gecko::Client] client
@@ -84,10 +84,10 @@ module Gecko
         end
       end
 
-      # Make an API request with parameters. Parameters vary via Record Type
+      # Fetch a record collection via the API. Parameters vary via Record Type
       #
       # @example Fetch via ID
-      #   client.Product.where(ids: [1,2]
+      #   client.Product.where(ids: [1,2])
       #
       # @example Fetch via date
       #   client.Product.where(updated_at_min: "2014-03-03T21:09:00")
@@ -109,10 +109,55 @@ module Gecko
       #
       # @api public
       def where(params={})
-        response        = request(:get, plural_path, params: params)
+        response = @last_response = request(:get, plural_path, params: params)
         parsed_response = response.parsed
         set_pagination(response.headers)
         parse_records(parsed_response)
+      end
+
+      # Returns all the records currently in the identity map.
+      #
+      # @example Return all Products previously fetched
+      #   client.Product.peek_all
+      #
+      # @return [Array<Gecko::Record::Base>]
+      #
+      # @api public
+      def peek_all
+        @identity_map.values
+      end
+
+      # Fetch the first record for the given parameters
+      #
+      # @example Fetch via ID
+      #   client.Product.first
+      #
+      # @example Fetch via date
+      #   client.Product.first(updated_at_min: "2014-03-03T21:09:00")
+      #
+      # @example Search
+      #   client.Product.first(q: "gecko")
+      #
+      # @param [#to_hash] params
+      # @option params [String] :q Search query
+      # @option params [Array<Integer>] :ids IDs to search for
+      # @option params [String] :updated_at_min Last updated_at minimum
+      # @option params [String] :updated_at_max Last updated_at maximum
+      # @option params [String] :order Sort order i.e 'name asc'
+      # @option params [String, Array<String>] :status Record status/es
+      #
+      # @return <Gecko::Record::Base> A record instance
+      #
+      # @api public
+      def first(params={})
+        where(params.merge(limit: 1)).first
+      end
+
+      # Fetch the forty-second record for the given parameters
+      #
+      # @api public
+      def forty_two(params={})
+        where(params.merge(limit: 1, page: 42)).first
       end
 
       # Returns the total count for a record type via API request.
@@ -120,11 +165,13 @@ module Gecko
       # @example
       #   client.Product.count
       #
+      # @param [#to_hash] params
+      #
       # @return [Integer] Total number of available records
       #
       # @api public
-      def count
-        self.where(limit: 0)
+      def count(params = {})
+        self.where(params.merge(limit: 0))
         @pagination['total_records']
       end
 
@@ -138,7 +185,7 @@ module Gecko
       #
       # @api public
       def size
-        (@pagination && @pagination['total_records']) || count
+        (defined?(@pagination) && @pagination['total_records']) || count
       end
 
       # Fetch a record via API, regardless of whether it is already in identity map.
@@ -154,7 +201,7 @@ module Gecko
       # @api private
       def fetch(id)
         verify_id_presence!(id)
-        response    = request(:get, plural_path + '/' + id.to_s)
+        response = @last_response = request(:get, plural_path + '/' + id.to_s)
         record_json = extract_record(response.parsed)
         instantiate_and_register_record(record_json)
       rescue OAuth2::Error => ex
@@ -217,16 +264,18 @@ module Gecko
       # Save a record
       #
       # @params [Object] :record A Gecko::Record object
+      # @param [Hash] opts the options to make the request with
+      # @option opts [Hash] :idempotency_key A unique identifier for this action
       #
       # @return [Boolean] whether the save was successful.
       #                   If false the record will contain an errors hash
       #
       # @api private
-      def save(record)
+      def save(record, opts = {})
         if record.persisted?
-          update_record(record)
+          update_record(record, opts)
         else
-          create_record(record)
+          create_record(record, opts)
         end
       end
 
@@ -291,11 +340,11 @@ module Gecko
       # @return [OAuth2::Response]
       #
       # @api private
-      def create_record(record)
+      def create_record(record, opts = {})
         response = request(:post, plural_path, {
           body: record.as_json,
           raise_errors: false
-        })
+        }.merge(headers: headers_from_opts(opts)))
         handle_response(record, response)
       end
 
@@ -304,11 +353,11 @@ module Gecko
       # @return [OAuth2::Response]
       #
       # @api private
-      def update_record(record)
+      def update_record(record, opts = {})
         response = request(:put, plural_path + "/" + record.id.to_s, {
           body: record.as_json,
           raise_errors: false
-        })
+        }.merge(headers: headers_from_opts(opts)))
         handle_response(record, response)
       end
 
@@ -340,6 +389,15 @@ module Gecko
       # @api private
       def set_pagination(headers)
         @pagination = JSON.parse(headers["x-pagination"]) if headers["x-pagination"]
+      end
+
+      # Applies an idempotency key to the request if provided
+      #
+      # @api private
+      def headers_from_opts(opts)
+        headers = {}
+        headers['Idempotency-Key'] = opts[:idempotency_key] if opts[:idempotency_key]
+        headers
       end
 
       # Parse and instantiate sideloaded records
@@ -377,6 +435,8 @@ module Gecko
           payload[:body]         = options[:body]
           payload[:model_class]  = model_class
           payload[:request_path] = path
+          options[:headers]      = options.fetch(:headers, {}).tap { |headers| headers['Content-Type'] = 'application/json' }
+          options[:body]         = options[:body].to_json if options[:body]
           payload[:response]     = @client.access_token.request(verb, path, options)
         end
       end
