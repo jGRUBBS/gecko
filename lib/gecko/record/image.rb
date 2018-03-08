@@ -5,8 +5,9 @@ module Gecko
     class Image < Base
       AVAILABLE_SIZES = [:full, :thumbnail]
 
-      belongs_to :variant
+      belongs_to :product
       belongs_to :uploader, class_name: "User",   readonly: true
+      attribute :variant_ids,      Array[Integer]
       attribute :name,             String
       attribute :url,              String
       attribute :position,         Integer,       readonly: true
