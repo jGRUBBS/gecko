@@ -3,7 +3,8 @@ require 'gecko/record/base'
 module Gecko
   module Record
     class FulfillmentReturn < Base
-      has_many :fulfillment_return_line_items
+      attribute :fulfillment_return_line_items, Array[Hash]
+
       belongs_to :order
       belongs_to :location
 

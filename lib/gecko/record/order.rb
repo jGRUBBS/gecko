@@ -5,7 +5,10 @@ module Gecko
     class Order < Base
       has_many :fulfillments
       has_many :invoices
-      has_many :order_line_items
+      # has_many :order_line_items
+
+      attribute :order_line_items,      Array[Hash]
+      attribute :order_line_item_ids,   Array[Integer]
 
       belongs_to :company
       belongs_to :contact
